@@ -1,0 +1,13 @@
+{
+    "data": "dataset.csv",
+    "batch_size": 5,
+    "class_range": 1,
+    "model": "InceptionV3",
+    "plot_model": false,
+    "metric": "cosine",
+    "margin": 0.5,
+    "use_slice_dist": true,
+    "lr": 1e-05,
+    "decay": 0.0001,
+    "n_epochs": 300
+}
