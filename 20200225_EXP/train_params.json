@@ -7,7 +7,9 @@
     "metric": "cosine",
     "margin": 0.5,
     "use_slice_dist": true,
-    "lr": 1e-05,
+    "lr": 1e-06,
     "decay": 0.0001,
-    "n_epochs": 300
+    "n_epochs": 300,
+    "caseX": "data/P1/P1-Plain2",
+    "caseY": "data/P1/P1-Plain3"
 }

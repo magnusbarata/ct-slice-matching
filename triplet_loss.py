@@ -96,8 +96,8 @@ def get_triplet_loss(margin, distance_function, use_slice_dist=False):
         p_dist = distance_function(anchor, pos)
 
         y_a, y_n, _ = tf.split(tf.squeeze(y_true, axis=-1), num_or_size_splits=3)
-        slice_dist = tf.abs(y_a - y_n) * 0.01 if use_slice_dist else 0.0
-        loss = tf.maximum(p_dist - n_dist + margin + slice_dist, 0.0)
+        slice_dist = tf.abs(y_a - y_n) * 0.1 if use_slice_dist else 0.0
+        loss = tf.maximum(p_dist - n_dist + margin * slice_dist, 0.0)
         return tf.reduce_mean(loss, axis=0)
 
     return triplet_loss
