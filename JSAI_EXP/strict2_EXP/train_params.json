@@ -1,5 +1,5 @@
 {
-  "data": "dataset.csv",
+  "data": "data/data190726.csv",
   "batch_size": 5,
   "class_range": 1,
   "gamma": 1.0,
@@ -11,6 +11,6 @@
   "lr": 1e-5,
   "decay": 1e-4,
   "n_epochs": 233,
-  "caseX": "data0227/ZA-H10-25_000",
-  "caseY": "data0227/ZA-H10-23_000"
+  "caseX": "20200227_DATA/ZA-H10-25_000",
+  "caseY": "20200227_DATA/ZA-H10-23_000"
 }
