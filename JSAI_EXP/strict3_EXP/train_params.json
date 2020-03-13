@@ -1,5 +1,5 @@
 {
-    "data": "data/data190726.csv",
+    "data": "dataset/data190726.csv",
     "batch_size": 5,
     "class_range": 1,
     "gamma": 0.3,

@@ -19,11 +19,12 @@ def create_dir(path):
                 print('Exiting...')
                 raise SystemExit
 
-def create_dataset(data_dir, fout='dataset.csv'):
+def create_dataset(data_dir, fout='dataset.csv', sort=True):
     cases = [r+'/' for r, d, f in os.walk(data_dir) if not d] #[f for f in glob.glob(data_dir + '/**/', recursive=True)]
     df = {'Fpath':[], 'MaxIndex':[]}
     for case in cases:
         fpaths = [f for f in glob.glob(case + '/*.DCM', recursive=True)]
+        if sort: fpaths.sort(key=lambda fname: fname.split('/')[-1])
         df['Fpath'] += fpaths
         df['MaxIndex'] += [len(fpaths)] * len(fpaths)
 

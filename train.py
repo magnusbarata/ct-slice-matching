@@ -103,6 +103,6 @@ if __name__ == '__main__':
     parser.add_argument('train_dir', nargs='?', default=datetime.today().strftime('%Y%m%d_EXP'))
     parser.add_argument('--settings', default='default_settings.json')
     parser.add_argument('--train', action='store_true')
-    parser.add_argument('--eval', nargs='?', const='data/data200227.csv', default=False)
+    parser.add_argument('--eval', nargs='?', const='dataset/data200227.csv', default=False)
     parser.add_argument('--data')
     main(parser.parse_args())
