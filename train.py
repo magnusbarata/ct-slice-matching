@@ -11,7 +11,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics.pairwise import pairwise_distances
 keras.backend.clear_session()
+
+def chi_squared_distance_mat(X, Y, eps=1e-16):
+    dist = np.empty((X.shape[0], Y.shape[0]))
+    for i, x in enumerate(X):
+        for j, y in enumerate(Y):
+            dist[i,j] = np.sum((x-y)**2 / np.maximum(x+y,eps))
+
+    return dist
 
 def plot_distance_matrix(dist, xlabel, ylabel):
     fig, ax = plt.subplots()
@@ -28,7 +37,7 @@ def main(args):
 
     if args.train:
         df = pd.read_csv(params.data)
-        train_gen = TripletGenerator(df.Fpath, df.MaxIndex, batch_size=params.batch_size, class_range=params.class_range)
+        train_gen = TripletGenerator(df.Fpath, df.MaxIndex, batch_size=params.batch_size, class_range=params.class_range, strict_sampling=params.gamma)
 
         if create_dir(args.train_dir):
             print('continue training') #TODO
@@ -73,7 +82,9 @@ def main(args):
         X = data_embeddings[params.caseX]
         Y = data_embeddings[params.caseY]
         if params.metric == 'euclidean': dist = euclidean_distances(X, Y)
+        elif params.metric == 'manhattan': dist = pairwise_distances(X, Y, metric='manhattan')
         elif params.metric == 'cosine': dist = 1 - cosine_similarity(X, Y)
+        elif params.metric == 'chi_squared': dist = chi_squared_distance_mat(X, Y)
         resultX = np.argmin(dist, axis=1)
         XYname = '/{}_{}'.format(params.caseX.split('/')[-1], params.caseY.split('/')[-1])
         np.savetxt(args.train_dir + XYname + '[sim].csv', resultX+1, fmt='%u', delimiter=',')
@@ -92,6 +103,6 @@ if __name__ == '__main__':
     parser.add_argument('train_dir', nargs='?', default=datetime.today().strftime('%Y%m%d_EXP'))
     parser.add_argument('--settings', default='default_settings.json')
     parser.add_argument('--train', action='store_true')
-    parser.add_argument('--eval', nargs='?', const='new-exp/data.csv', default=False)
+    parser.add_argument('--eval', nargs='?', const='data0227.csv', default=False)
     parser.add_argument('--data')
     main(parser.parse_args())

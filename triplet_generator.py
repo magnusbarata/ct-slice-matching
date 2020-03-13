@@ -4,7 +4,7 @@ import keras
 from skimage.transform import resize
 
 class TripletGenerator(keras.utils.Sequence):
-    def __init__(self, list_IDs, num_slices=None, batch_size=32, dim=(512, 512), n_channels=1, shuffle=True, class_range=3, generate_siamese=False):
+    def __init__(self, list_IDs, num_slices=None, batch_size=32, dim=(512, 512), n_channels=1, shuffle=True, class_range=3, generate_siamese=False, strict_sampling=0.3):
         self.list_IDs = list_IDs
         self.num_slices = num_slices
         self.batch_size = batch_size
@@ -13,6 +13,7 @@ class TripletGenerator(keras.utils.Sequence):
         self.n_channels = n_channels
         self.class_range = class_range
         self.gen_siamese = generate_siamese
+        self.gamma = strict_sampling
 
         self.on_epoch_end()
 
@@ -72,6 +73,7 @@ class TripletGenerator(keras.utils.Sequence):
     def get_fpos_fneg(self, fquery, max_index):
         base_path = fquery.split('/')[:-1]
         anchor_idx = int(fquery.split('/')[-1][:-4])
+        if self.gamma > 0.0: self.class_range = 1
 
         if anchor_idx - self.class_range < 1: low_i = 1
         else: low_i = anchor_idx - self.class_range
@@ -81,6 +83,8 @@ class TripletGenerator(keras.utils.Sequence):
 
         all_indices = np.arange(1, max_index+1)
         all_indices = all_indices[all_indices != anchor_idx]
+        if np.random.rand(1) < self.gamma:
+            all_indices = all_indices[(all_indices >= anchor_idx-2) & (all_indices <= anchor_idx+2)]
 
         neg_mask = np.where((all_indices < low_i) | (all_indices > high_i), True, False)
         neg_idx = int(np.random.choice(all_indices[neg_mask], 1))

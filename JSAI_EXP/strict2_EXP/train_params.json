@@ -1,0 +1,16 @@
+{
+  "data": "dataset.csv",
+  "batch_size": 5,
+  "class_range": 1,
+  "gamma": 1.0,
+  "model": "InceptionV3",
+  "plot_model": false,
+  "metric": "cosine",
+  "margin": 0.5,
+  "use_slice_dist": false,
+  "lr": 1e-5,
+  "decay": 1e-4,
+  "n_epochs": 233,
+  "caseX": "data0227/ZA-H10-25_000",
+  "caseY": "data0227/ZA-H10-23_000"
+}
