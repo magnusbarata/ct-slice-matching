@@ -23,6 +23,8 @@ the matching CT slices of different dates, a trained network can discover simila
    python train.py EXPERIMENT_DIR --eval DATASET.csv  # evaluate trained model on EXPERIMENT_DIR using dataset from DATASET.csv
    ```
 2. Visualize similarity
+   ```sh
+   ```
 
 ## Directories and Files Descriptions
 * Files:
