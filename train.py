@@ -4,7 +4,7 @@ from utils import *
 
 import pandas as pd
 from models import *
-from triplet_generator import TripletGenerator
+from generators.triplet_generator import TripletGenerator
 from triplet_loss import *
 
 import numpy as np
@@ -22,6 +22,13 @@ def chi_squared_distance_mat(X, Y, eps=1e-16):
 
     return dist
 
+def train(model, data_gen, n_epochs, dir):
+    chkpoint = keras.callbacks.ModelCheckpoint(dir + '/model.h5', monitor='loss', save_weights_only=False, save_best_only=True, period=1)
+    logger = keras.callbacks.CSVLogger(dir + '/loss.csv')
+    stopper = keras.callbacks.EarlyStopping(monitor='loss', patience=20)
+    model.fit_generator(data_gen, epochs=n_epochs, verbose=1, use_multiprocessing=True, workers=2, callbacks=[chkpoint, logger, stopper])
+
+
 def plot_distance_matrix(dist, xlabel, ylabel):
     fig, ax = plt.subplots()
     im = ax.imshow(dist, cmap='hot')
@@ -36,11 +43,7 @@ def main(args):
     if args.data: create_dataset(args.data, params.data)
 
     if args.train:
-        df = pd.read_csv(params.data)
-        train_gen = TripletGenerator(df.Fpath, df.MaxIndex, batch_size=params.batch_size, class_range=params.class_range, strict_sampling=params.gamma)
-
-        if create_dir(args.train_dir):
-            print('continue training') #TODO
+        if continue_train_on(args.train_dir):
             params = Params(args.train_dir + '/train_params.json')
             model = keras.models.load_model(args.train_dir + '/model.h5', custom_objects={'tf': tf, 'mean_l2': mean_l2, 'triplet_loss': get_triplet_loss(params.margin, PAIRED_DISTANCES[params.metric], params.use_slice_dist)})
         else:
@@ -54,11 +57,10 @@ def main(args):
                 model.compile(loss=get_triplet_loss(params.margin, PAIRED_DISTANCES[params.metric], params.use_slice_dist),
                               optimizer=optimizer, metrics=[mean_l2])
 
-            chkpoint = keras.callbacks.ModelCheckpoint(args.train_dir + '/model.h5', monitor='loss', save_weights_only=False, save_best_only=True, period=1)
-            logger = keras.callbacks.CSVLogger(args.train_dir + '/loss.csv')
-            stopper = keras.callbacks.EarlyStopping(monitor='loss', patience=20)
-            model.fit_generator(train_gen, epochs=params.n_epochs, verbose=1, use_multiprocessing=True, workers=2, callbacks=[chkpoint, logger, stopper])
-            params.save(args.train_dir + '/train_params.json')
+        df = pd.read_csv(params.data)
+        train_gen = TripletGenerator(df.Fpath, df.MaxIndex, batch_size=params.batch_size, class_range=params.class_range, strict_sampling=params.gamma)
+        train(model, train_gen, params.n_epochs, args.train_dir)
+        params.save(args.train_dir + '/train_params.json')
 
     if args.eval:
         params = Params(args.train_dir + '/train_params.json')
@@ -103,6 +105,6 @@ if __name__ == '__main__':
     parser.add_argument('train_dir', nargs='?', default=datetime.today().strftime('%Y%m%d_EXP'))
     parser.add_argument('--settings', default='default_settings.json')
     parser.add_argument('--train', action='store_true')
-    parser.add_argument('--eval', nargs='?', const='dataset/data200227.csv', default=False)
-    parser.add_argument('--data')
+    parser.add_argument('--eval', nargs='?', const='dataset/data200227.csv', default=False, help='Argument given after option string will serve as evaluation data path.')
+    parser.add_argument('--data', help='Assign a data directory.')
     main(parser.parse_args())
