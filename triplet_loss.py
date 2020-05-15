@@ -75,10 +75,11 @@ def paired_euclidean(X, Y, squared=False):
     distances = tf.reduce_sum(tf.square(X - Y), axis=1)
     return distances if squared else tf.sqrt(distances)
 
-PAIRED_DISTANCES = {'euclidean': paired_euclidean,
+DISTANCE_METRICS = {'euclidean': paired_euclidean,
                     'manhattan': paired_manhattan,
                     'cosine': paired_cosine,
-                    'chi_squared': paired_chi_squared}
+                    'chi_squared': paired_chi_squared,
+                    'learn': False}
 
 def get_triplet_loss(margin, distance_function, use_slice_dist=False):
     """Function closure returning triplet loss function.
@@ -100,4 +101,9 @@ def get_triplet_loss(margin, distance_function, use_slice_dist=False):
         loss = tf.maximum(p_dist - n_dist + margin * slice_dist, 0.0)
         return tf.reduce_mean(loss, axis=0)
 
-    return triplet_loss
+    def triplet_loss_metric(y_true, y_pred):
+        y_pred = tf.square(y_pred)
+        loss = tf.maximum(y_pred[:,0] - y_pred[:,1] + margin, 0.0)
+        return tf.reduce_mean(loss, axis=0)
+
+    return triplet_loss if distance_function else triplet_loss_metric

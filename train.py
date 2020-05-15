@@ -41,24 +41,20 @@ def plot_distance_matrix(dist, xlabel, ylabel):
 def main(args):
     params = Params(args.settings)
     if args.data: create_dataset(args.data, params.data)
+    shared_net = True if params.metric == 'learn' else False
 
     if args.train:
         if continue_train_on(args.train_dir):
             params = Params(args.train_dir + '/train_params.json')
-            model = keras.models.load_model(args.train_dir + '/model.h5', custom_objects={'tf': tf, 'mean_l2': mean_l2, 'triplet_loss': get_triplet_loss(params.margin, PAIRED_DISTANCES[params.metric], params.use_slice_dist)})
+            model = keras.models.load_model(args.train_dir + '/model.h5', custom_objects={'tf': tf, 'mean_l2': mean_l2, 'triplet_loss': get_triplet_loss(params.margin, DISTANCE_METRICS[params.metric], params.use_slice_dist)})
         else:
             model = MODELS[params.model]((512, 512, 1))
-
             optimizer = keras.optimizers.Adam(lr=params.lr, decay=params.decay)
-            if params.model == 'SiameseModel':
-                train_gen.gen_siamese = True
-                model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-            else:
-                model.compile(loss=get_triplet_loss(params.margin, PAIRED_DISTANCES[params.metric], params.use_slice_dist),
-                              optimizer=optimizer, metrics=[mean_l2])
+            model.compile(loss=get_triplet_loss(params.margin, DISTANCE_METRICS[params.metric], params.use_slice_dist),
+                          optimizer=optimizer, metrics=[mean_l2])
 
         df = pd.read_csv(params.data)
-        train_gen = TripletGenerator(df.Fpath, df.MaxIndex, batch_size=params.batch_size, class_range=params.class_range, strict_sampling=params.gamma)
+        train_gen = TripletGenerator(df.Fpath, df.MaxIndex, batch_size=params.batch_size, class_range=params.class_range, strict_sampling=params.gamma, shared_net=shared_net)
         train(model, train_gen, params.n_epochs, args.train_dir)
         params.save(args.train_dir + '/train_params.json')
 
@@ -68,7 +64,7 @@ def main(args):
         df = pd.read_csv(args.eval, usecols=['Fpath'])
         test_gen = TripletGenerator(df.Fpath, shuffle=False, batch_size=1)
 
-        model = keras.models.load_model(args.train_dir + '/model.h5', custom_objects={'tf': tf, 'mean_l2': mean_l2, 'triplet_loss': get_triplet_loss(params.margin, PAIRED_DISTANCES[params.metric], params.use_slice_dist)})
+        model = keras.models.load_model(args.train_dir + '/model.h5', custom_objects={'tf': tf, 'mean_l2': mean_l2, 'triplet_loss': get_triplet_loss(params.margin, DISTANCE_METRICS[params.metric], params.use_slice_dist)})
         embeddings = model.predict_generator(test_gen, use_multiprocessing=True, verbose=1)
 
         print('dumping embeddings...', end='')

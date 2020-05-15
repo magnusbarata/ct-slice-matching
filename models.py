@@ -49,7 +49,60 @@ def siameseModel(shape, base_model=deepRanking, distance_function=_l2distance):
     prediction = Dense(1, activation='sigmoid')(dist)
     return Model([in1, in2], prediction, name=base.name+'-Siamese')
 
+def learnMetric(shape):
+    def shared_net1(shape):
+        input = Input(shape, dtype='float')
+        conv1 = SeparableConv2D(32, (5,5))(input)
+        conv1 = MaxPool2D((3,3))(conv1)
+        conv1 = Conv2D(32, (1,1))(conv1)
+        conv2 = SeparableConv2D(64, (3,3))(conv1)
+        conv2 = MaxPool2D((2,2))(conv2)
+        output = Conv2D(64, (1,1))(conv2)
+
+        return Model(input, output, name='shared_net1')
+
+    def shared_net2(shape):
+        input =Input(shape, dtype='float')
+        conv3 = SeparableConv2D(32, (3,3))(input)
+        conv3 = MaxPool2D((2,2))(conv3)
+        conv3 = Conv2D(32, (1,1))(conv3)
+        conv4 = SeparableConv2D(32, (3,3))(conv3)
+        conv4 = MaxPool2D((2,2))(conv4)
+        conv4 = Conv2D(32, (1,1))(conv4)
+        conv5 = SeparableConv2D(32, (3,3))(conv4)
+        conv5 = MaxPool2D((2,2))(conv5)
+        conv5 = Conv2D(16, (1,1))(conv5)
+        fc = Flatten()(conv5)
+        fc = Dense(500)(fc)
+        fc = Dense(500)(fc)
+        output = Dense(1, activation='sigmoid')(fc)
+
+        return Model(input, output, name='shared_net2')
+
+    in_r = Input(shape, dtype='float')
+    in_n = Input(shape, dtype='float')
+    in_p = Input(shape, dtype='float')
+
+    # Encode positive, reference, and negative
+    shared1 = shared_net1(shape)
+    encoded_r = shared1(in_r)
+    encoded_n = shared1(in_n)
+    encoded_p = shared1(in_p)
+
+    # Regroup pairs
+    neg_pair = Concatenate()([encoded_r, encoded_n])
+    pos_pair = Concatenate()([encoded_r, encoded_p])
+
+    # Encode positive and negative pair
+    shared2 = shared_net2(keras.backend.int_shape(neg_pair)[1:])
+    encoded_neg = shared2(neg_pair)
+    encoded_pos = shared2(pos_pair)
+    out = Concatenate()([encoded_neg, encoded_pos])
+
+    return Model([in_r, in_n, in_p], out, name='LearnMetric')
+
 MODELS = {'DeepRanking': deepRanking,
           'SiameseModel': siameseModel,
           'InceptionV3': inceptionV3,
-          'NormalizedInceptionV3': normalizedInceptionV3}
+          'NormalizedInceptionV3': normalizedInceptionV3,
+          'LearnMetric': learnMetric}
