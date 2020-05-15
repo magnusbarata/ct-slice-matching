@@ -4,7 +4,16 @@ import keras
 from skimage.transform import resize
 
 class TripletGenerator(keras.utils.Sequence):
-    def __init__(self, list_IDs, num_slices=None, batch_size=32, dim=(512, 512), n_channels=1, shuffle=True, class_range=3, generate_siamese=False, strict_sampling=0.3):
+    def __init__(self,
+                 list_IDs,
+                 num_slices=None,
+                 batch_size=32,
+                 dim=(512, 512),
+                 n_channels=1,
+                 shuffle=True,
+                 class_range=3,
+                 strict_sampling=0.3,
+                 shared_net=False):
         self.list_IDs = list_IDs
         self.num_slices = num_slices
         self.batch_size = batch_size
@@ -12,8 +21,8 @@ class TripletGenerator(keras.utils.Sequence):
         self.dim = dim
         self.n_channels = n_channels
         self.class_range = class_range
-        self.gen_siamese = generate_siamese
         self.gamma = strict_sampling
+        self.shared_net = shared_net
 
         self.on_epoch_end()
 
@@ -36,26 +45,9 @@ class TripletGenerator(keras.utils.Sequence):
                 X[i,] = self.getPixelData(fquery)
 
             return X
-        elif self.gen_siamese:
-            X1 = np.empty((self.batch_size, *self.dim, self.n_channels))
-            X2 = np.empty((self.batch_size, *self.dim, self.n_channels))
-            y = [0] * self.batch_size
-            for i, index  in enumerate(b_indices):
-                fquery = self.list_IDs[index]
-                fneg, fpos, _ = self.get_fpos_fneg(fquery, self.num_slices[index])
-                X1[i,] = self.getPixelData(fquery)
-
-                if np.random.rand(1) < 0.5:
-                    X2[i,] = self.getPixelData(fneg)
-                    y[i] = 0
-                else:
-                    X2[i,] = self.getPixelData(fpos)
-                    y[i] = 1
-
-            return [X1, X2], y
         else:
             X = np.empty((3 * self.batch_size, *self.dim, self.n_channels))
-            y = [0] * 3 * self.batch_size
+            y = np.empty(3 * self.batch_size)
             for i, index  in enumerate(b_indices):
                 fquery = self.list_IDs[index]
                 fneg, fpos, slice_num = self.get_fpos_fneg(fquery, self.num_slices[index])
@@ -68,6 +60,8 @@ class TripletGenerator(keras.utils.Sequence):
                 y[i+self.batch_size] = slice_num[1]
                 y[i+2*self.batch_size] = slice_num[2]
 
+            if self.shared_net:
+                return np.split(X, 3), np.reshape(y, (self.batch_size, 3))
             return X, y
 
     def get_fpos_fneg(self, fquery, max_index):
