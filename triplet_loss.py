@@ -91,19 +91,21 @@ def get_triplet_loss(margin, distance_function, use_slice_dist=False):
     # Returns
         triplet loss function
     """
-    def triplet_loss(y_true, y_pred):
-        anchor, neg, pos = tf.split(y_pred, num_or_size_splits=3, axis=0)
-        n_dist = distance_function(anchor, neg)
-        p_dist = distance_function(anchor, pos)
+    def get_slice_dist(y, alpha=0.1):
+        y = tf.reshape(y, [-1, 3])
+        return (tf.abs(y[:,1]-y[:,0]) - tf.abs(y[:,2]-y[:,0])) * alpha
 
-        y_a, y_n, _ = tf.split(tf.squeeze(y_true, axis=-1), num_or_size_splits=3)
-        slice_dist = tf.abs(y_a - y_n) * 0.1 if use_slice_dist else 0.0
+    def triplet_loss(y_true, y_pred):
+        if distance_function:
+            anchor, neg, pos = tf.split(y_pred, num_or_size_splits=3, axis=0)
+            n_dist = distance_function(anchor, neg)
+            p_dist = distance_function(anchor, pos)
+        else:
+            y_pred = tf.square(y_pred)
+            n_dist, p_dist = y_pred[:,0], y_pred[:,1]
+
+        slice_dist = get_slice_dist(y_true) if use_slice_dist else 0.0
         loss = tf.maximum(p_dist - n_dist + margin * slice_dist, 0.0)
         return tf.reduce_mean(loss, axis=0)
 
-    def triplet_loss_metric(y_true, y_pred):
-        y_pred = tf.square(y_pred)
-        loss = tf.maximum(y_pred[:,0] - y_pred[:,1] + margin, 0.0)
-        return tf.reduce_mean(loss, axis=0)
-
-    return triplet_loss if distance_function else triplet_loss_metric
+    return triplet_loss

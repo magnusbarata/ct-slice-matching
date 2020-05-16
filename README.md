@@ -26,12 +26,15 @@ the matching CT slices of different dates, a trained network can discover simila
    ```sh
    ```
 
-## Sample Result
-- Corresponding CT slices according to the trained network.
+## Sample result
+__Corresponding CT slices according to the trained network.__
+
   <img src="imgs/corresponding_CT_slices.png" width="400">
 
  Leftmost image is the input slice, selected from August 2019 scan, and the other two slices are selected by the network among slices from scans taken in May 2019 and February 2014.
-- Salient maps visualization
+
+__Salient maps visualization__
+
   <img src="imgs/salient_maps.png" width="400">
 
   Although being trained on unannotated data, the trained network is able to localize similar structures between slices.
